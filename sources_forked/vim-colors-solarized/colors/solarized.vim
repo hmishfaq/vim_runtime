@@ -604,10 +604,10 @@ if      (g:solarized_visibility=="high")
     exe "hi! NonText"    .s:fmt_bold   .s:fg_red    .s:bg_none
 elseif  (g:solarized_visibility=="low")
     exe "hi! SpecialKey" .s:fmt_bold   .s:fg_base02 .s:bg_none
-    exe "hi! NonText"    .s:fmt_bold   .s:fg_base02 .s:bg_none
+    exe "hi! NonText"    .s:fmt_bold   .s:fg_back .s:bg_none
 else
     exe "hi! SpecialKey" .s:fmt_bold   .s:fg_base00 .s:bg_base02
-    exe "hi! NonText"    .s:fmt_bold   .s:fg_base00 .s:bg_none
+    exe "hi! NonText"    .s:fmt_bold   .s:fg_back .s:bg_none
 endif
 exe "hi! StatusLine"     .s:fmt_none   .s:fg_base1  .s:bg_base02 .s:fmt_revbb
 exe "hi! StatusLineNC"   .s:fmt_none   .s:fg_base00 .s:bg_base02 .s:fmt_revbb
@@ -618,7 +618,7 @@ exe "hi! IncSearch"      .s:fmt_stnd   .s:fg_orange .s:bg_none
 exe "hi! Search"         .s:fmt_revr   .s:fg_yellow .s:bg_none
 exe "hi! MoreMsg"        .s:fmt_none   .s:fg_blue   .s:bg_none
 exe "hi! ModeMsg"        .s:fmt_none   .s:fg_blue   .s:bg_none
-exe "hi! LineNr"         .s:fmt_none   .s:fg_base01 .s:bg_base02
+exe "hi! LineNr"         .s:fmt_none   .s:fg_base01 .s:bg_base03
 exe "hi! Question"       .s:fmt_bold   .s:fg_cyan   .s:bg_none
 if ( has("gui_running") || &t_Co > 8 )
     exe "hi! VertSplit"  .s:fmt_none   .s:fg_base00 .s:bg_base00
@@ -630,7 +630,7 @@ exe "hi! VisualNOS"      .s:fmt_stnd   .s:fg_none   .s:bg_base02 .s:fmt_revbb
 exe "hi! WarningMsg"     .s:fmt_bold   .s:fg_red    .s:bg_none
 exe "hi! WildMenu"       .s:fmt_none   .s:fg_base2  .s:bg_base02 .s:fmt_revbb
 exe "hi! Folded"         .s:fmt_undb   .s:fg_base0  .s:bg_base02  .s:sp_base03
-exe "hi! FoldColumn"     .s:fmt_none   .s:fg_base0  .s:bg_base02
+exe "hi! FoldColumn"     .s:fmt_none   .s:fg_base0  .s:bg_base03
 if      (g:solarized_diffmode=="high")
 exe "hi! DiffAdd"        .s:fmt_revr   .s:fg_green  .s:bg_none
 exe "hi! DiffChange"     .s:fmt_revr   .s:fg_yellow .s:bg_none
