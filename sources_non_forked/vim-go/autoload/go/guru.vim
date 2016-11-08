@@ -7,18 +7,6 @@ func! s:RunGuru(mode, format, selected, needs_scope) range abort
     return {'err': "bin path not found"}
   endif
 
-  let filename = fnamemodify(expand("%"), ':p:gs?\\?/?')
-  if !filereadable(filename)
-    " this might happen for new buffers which are not written yet
-    return {'err': "file does not exist"}
-  endif
-
-  if &modified
-    " Write current unsaved buffer to a temp file and use the modified content
-    let l:tmpname = tempname()
-    call writefile(getline(1, '$'), l:tmpname)
-    let filename = l:tmpname
-  endif
   let dirname = expand('%:p:h')
   let pkg = go#package#ImportPath(dirname)
 
@@ -29,6 +17,15 @@ func! s:RunGuru(mode, format, selected, needs_scope) range abort
 
   " start constructing the 'command' variable
   let command = bin_path
+
+  let filename = fnamemodify(expand("%"), ':p:gs?\\?/?')
+  let in = ""
+  if &modified
+    let sep = go#util#LineEnding()
+    let content  = join(getline(1, '$'), sep )
+    let in = filename . "\n" . strlen(content) . "\n" . content
+    let command .= " -modified"
+  endif
 
   " enable outputting in json format
   if a:format == "json"
@@ -99,10 +96,10 @@ func! s:RunGuru(mode, format, selected, needs_scope) range abort
   endif
 
   " run, forrest run!!!
-  let out = go#util#System(command)
-
-  if exists("l:tmpname")
-    call delete(l:tmpname)
+  if &modified
+    let out = go#util#System(command, in)
+  else
+    let out = go#util#System(command)
   endif
 
   let $GOPATH = old_gopath
@@ -311,7 +308,26 @@ function! go#guru#What(selected)
   return result
 endfunction
 
+function! go#guru#AutoToogleSameIds()
+  if get(g:, "go_auto_sameids", 0)
+    call go#util#EchoProgress("sameids auto highlighting disabled")
+    call go#guru#ClearSameIds()
+    let g:go_auto_sameids = 0
+    return
+  endif
+
+  call go#util#EchoSuccess("sameids auto highlighting enabled")
+  let g:go_auto_sameids = 1
+endfunction
+
 function! go#guru#SameIds(selected)
+  " we use matchaddpos() which was introduce with 7.4.330, be sure we have
+  " it: http://ftp.vim.org/vim/patches/7.4/7.4.330
+  if !exists("*matchaddpos")
+    call go#util#EchoError("GoSameIds is supported with Vim version 7.4-330 or later")
+    return
+  endif
+
   let result = go#guru#What(a:selected)
 
   call go#guru#ClearSameIds() " run after calling guru to reduce flicker.
@@ -347,6 +363,12 @@ function! go#guru#SameIds(selected)
     let pos = split(item, ':')
     call matchaddpos('goSameId', [[str2nr(pos[-2]), str2nr(pos[-1]), str2nr(poslen)]])
   endfor
+
+  if get(g:, "go_auto_sameids", 0)
+    " re-apply SameIds at the current cursor position at the time the buffer
+    " is redisplayed: e.g. :edit, :GoRename, etc.
+    autocmd BufWinEnter <buffer> nested call go#guru#SameIds(-1)
+  endif
 endfunction
 
 function! go#guru#ClearSameIds()
@@ -356,6 +378,19 @@ function! go#guru#ClearSameIds()
       call matchdelete(item['id'])
     endif
   endfor
+
+  " remove the autocmds we defined
+  if exists("#BufWinEnter<buffer>")
+    autocmd! BufWinEnter <buffer>
+  endif
+endfunction
+
+function! go#guru#ToggleSameIds(selected)
+  if len(getmatches()) != 0 
+    call go#guru#ClearSameIds()
+  else
+    call go#guru#SameIds(a:selected)
+  endif
 endfunction
 
 " vim: sw=2 ts=2 et

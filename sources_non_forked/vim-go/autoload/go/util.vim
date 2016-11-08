@@ -43,6 +43,31 @@ function! go#util#IsWin()
   return 0
 endfunction
 
+let s:env_cache = {}
+
+" env returns the go environment variable for the given key. Where key can be
+" GOARCH, GOOS, GOROOT, etc... It caches the result and returns the cached
+" version. 
+function! go#util#env(key)
+  let l:key = tolower(a:key)
+  if has_key(s:env_cache, l:key)
+    return s:env_cache[l:key]
+  endif
+
+  if executable('go')
+    let l:var = call('go#util#'.l:key, [])
+    if go#util#ShellError() != 0
+      call go#util#EchoError(printf("'go env %s' failed", toupper(l:key)))
+      return ''
+    endif
+  else
+    let l:var = eval("$".toupper(a:key))
+  endif
+
+  let s:env_cache[l:key] = l:var
+  return l:var
+endfunction
+
 function! go#util#goarch()
   return substitute(go#util#System('go env GOARCH'), '\n', '', 'g')
 endfunction
@@ -91,8 +116,20 @@ else
   let s:vim_shell_error = ''
 endif
 
+" System runs a shell command. It will reset the shell to /bin/sh for Unix-like
+" systems if it is executable.
 function! go#util#System(str, ...)
-  return call(s:vim_system, [a:str] + a:000)
+  let l:shell = &shell
+  if !go#util#IsWin() && executable('/bin/sh')
+    let &shell = '/bin/sh'
+  endif
+
+  try
+    let l:output = call(s:vim_system, [a:str] + a:000)
+    return l:output
+  finally
+    let &shell = l:shell
+  endtry
 endfunction
 
 function! go#util#ShellError()
@@ -227,24 +264,68 @@ function! go#util#camelcase(word)
   endif
 endfunction
 
+function! go#util#AddTags(line1, line2, ...)
+  " default is json
+  let l:keys = ["json"]
+  if a:0
+    let l:keys = a:000
+  endif
+
+  let l:line1 = a:line1
+  let l:line2 = a:line2
+
+  " If we're inside a struct and just call this function let us add the tags
+  " to all fields
+  " TODO(arslan): I don't like using patterns. Check if we can move it to
+  " `motion` and do it via AST based position
+  let ln1 = searchpair('struct {', '', '}', 'bcnW')
+  if ln1 == 0
+    echon "vim-go: " | echohl ErrorMsg | echon "cursor is outside the struct" | echohl None
+    return
+  endif
+
+  " searchpair only returns a single position
+  let ln2 = search('}', "cnW")
+
+  " if no range is given we apply for the whole struct
+  if l:line1 == l:line2
+    let l:line1 = ln1 + 1
+    let l:line2 = ln2 - 1
+  endif
+
+  for line in range(l:line1, l:line2)
+    " get the field name (word) that are not part of a commented line
+    let l:matched = matchstr(getline(line), '\(\/\/.*\)\@<!\w\+')
+    if empty(l:matched)
+      continue
+    endif
+
+    let word = go#util#snippetcase(l:matched)
+    let tags = map(copy(l:keys), 'printf("%s:%s", v:val,"\"'. word .'\"")')
+    let updated_line = printf("%s `%s`", getline(line), join(tags, " "))
+
+    " finally, update the line inplace
+    call setline(line, updated_line)
+  endfor
+endfunction
 
 " TODO(arslan): I couldn't parameterize the highlight types. Check if we can
 " simplify the following functions
 
 function! go#util#EchoSuccess(msg)
-  redraw! | echon "vim-go: " | echohl Function | echon a:msg | echohl None
+  redraw | echon "vim-go: " | echohl Function | echon a:msg | echohl None
 endfunction
 
 function! go#util#EchoError(msg)
-  redraw! | echon "vim-go: " | echohl ErrorMsg | echon a:msg | echohl None
+  redraw | echon "vim-go: " | echohl ErrorMsg | echon a:msg | echohl None
 endfunction
 
 function! go#util#EchoWarning(msg)
-  redraw! | echon "vim-go: " | echohl WarningMsg | echon a:msg | echohl None
+  redraw | echon "vim-go: " | echohl WarningMsg | echon a:msg | echohl None
 endfunction
 
 function! go#util#EchoProgress(msg)
-  redraw! | echon "vim-go: " | echohl Identifier | echon a:msg | echohl None
+  redraw | echon "vim-go: " | echohl Identifier | echon a:msg | echohl None
 endfunction
 
 " vim: sw=2 ts=2 et
