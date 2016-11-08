@@ -103,7 +103,7 @@ let g:lightline = {
       \ 'colorscheme': 'solarized',
       \ }
 
-set guifont=Source\ Code\ Pro\ for\ Powerline\ Medium
+"set guifont=Source\ Code\ Pro\ for\ Powerline\ Medium
 let g:lightline = {
       \ 'colorscheme': 'solarized',
       \ 'active': {
