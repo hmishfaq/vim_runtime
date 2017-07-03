@@ -63,7 +63,7 @@ nmap <leader>w :w!<cr>
 
 " :W sudo saves the file 
 " (useful for handling the permission-denied error)
-"command W w !sudo tee % > /dev/null
+command W w !sudo tee % > /dev/null
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -94,7 +94,7 @@ set wildignore+=*/Library
 set ruler
 
 " Height of the command bar
-set cmdheight=2
+set cmdheight=1
 
 " A buffer becomes hidden when it is abandoned
 set hid
@@ -143,7 +143,7 @@ set foldcolumn=1
 syntax enable 
 
 try
-    colorscheme solarized 
+    colorscheme dracula
 catch
 endtry
 
