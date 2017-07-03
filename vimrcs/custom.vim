@@ -23,3 +23,12 @@ if g:colors_name == "dracula"
     hi FoldColumn ctermfg=246 ctermbg=NONE cterm=NONE guifg=#909194 guibg=#44475a gui=NONE
 endif
 
+if has("unix")
+    let s:uname = system("uname -s")
+    if s:uname == "Darwin"
+        if $TMUX == ''
+            set clipboard=unnamed
+        endif
+    endif
+endif
+
